@@ -624,6 +624,7 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
                     time: timeStr,
                     status: res['status'] ?? 'pending',
                     reservationId: res['reservation_id']?.toString() ?? '',
+                    cancelReason: res['cancel_reason'],
                   ),
                 );
               },
@@ -644,6 +645,7 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
     required String time,
     required String status,
     required String reservationId,
+    String? cancelReason,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -692,13 +694,13 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
           const Divider(height: 1),
           const SizedBox(height: 16),
           // Bottom Row (Status actions)
-          _buildStatusActions(status, reservationId),
+          _buildStatusActions(status, reservationId, cancelReason),
         ],
       ),
     );
   }
 
-  Widget _buildStatusActions(String status, String reservationId) {
+  Widget _buildStatusActions(String status, String reservationId, String? cancelReason) {
     if (status == 'pending') {
       // Menunggu Konfirmasi
       return Column(
@@ -802,7 +804,7 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
           ),
         ],
       );
-    } else {
+    } else if (status == 'in_progress') {
       // Sedang Berlangsung
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -842,6 +844,101 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
           ),
         ],
       );
+    } else if (status == 'cancel_requested') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'Permintaan Pembatalan',
+                style: TextStyle(
+                  color: Colors.orange,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Alasan Pelanggan:',
+                  style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  cancelReason ?? '-',
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _handleCancelRequest(reservationId, 'reject_cancel'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: redColor,
+                    side: BorderSide(color: redColor),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => _handleCancelRequest(reservationId, 'approve_cancel'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: greenColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text('Terima', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  void _handleCancelRequest(String reservationId, String action) async {
+    try {
+      await http.post(
+        Uri.parse('http://192.168.1.4/barbershop_api/update_reservation.php'),
+        body: jsonEncode({
+          'reservation_id': reservationId,
+          'action': action,
+        }),
+      );
+      _fetchReservations(); // Refresh jadwal
+    } catch (e) {
+      // ignore
     }
   }
 }

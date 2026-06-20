@@ -101,14 +101,15 @@ class _HistoryPageState extends State<HistoryPage> {
           (r) =>
               r['status'] == 'pending' ||
               r['status'] == 'confirmed' ||
-              r['status'] == 'in_progress',
+              r['status'] == 'in_progress' ||
+              r['status'] == 'cancel_requested',
         )
         .toList();
     final completedList = _reservations
         .where((r) => r['status'] == 'completed')
         .toList();
     final canceledList = _reservations
-        .where((r) => r['status'] == 'rejected' || r['status'] == 'canceled')
+        .where((r) => r['status'] == 'rejected' || r['status'] == 'canceled' || r['status'] == 'cancelled')
         .toList();
 
     // Menggunakan DefaultTabController untuk memanage 3 Tab secara otomatis
@@ -209,16 +210,20 @@ class _HistoryPageState extends State<HistoryPage> {
           } else if (rawStatus == 'rejected') {
             statusText = 'Ditolak';
             statusColor = dangerColor;
-          } else if (rawStatus == 'canceled') {
+          } else if (rawStatus == 'canceled' || rawStatus == 'cancelled') {
             statusText = 'Dibatalkan';
             statusColor = textTertiary;
+          } else if (rawStatus == 'cancel_requested') {
+            statusText = 'Menunggu Batal';
+            statusColor = Colors.orange;
           }
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: _buildReservationCard(
-              id: '#RES-${res['reservation_id']}',
+              id: res['reservation_id'].toString(),
               status: statusText,
+              rawStatus: rawStatus,
               statusColor: statusColor,
               barberName: res['barber_name'] ?? '-',
               date: _formatDate(res['reservation_date'] ?? ''),
@@ -234,6 +239,7 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget _buildReservationCard({
     required String id,
     required String status,
+    required String rawStatus,
     required Color statusColor,
     required String barberName,
     required String date,
@@ -262,7 +268,7 @@ class _HistoryPageState extends State<HistoryPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                id,
+                '#RES-$id',
                 style: TextStyle(
                   fontSize: 12,
                   color: textTertiary,
@@ -344,8 +350,105 @@ class _HistoryPageState extends State<HistoryPage> {
               ),
             ],
           ),
+          
+          // Tombol Batal
+          if (rawStatus == 'pending' || rawStatus == 'confirmed') ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => _showCancelDialog(id),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: dangerColor,
+                  side: BorderSide(color: dangerColor),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Batalkan Reservasi'),
+              ),
+            ),
+          ] else if (rawStatus == 'cancel_requested') ...[
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Menunggu persetujuan admin untuk pembatalan.',
+                      style: TextStyle(color: Colors.orange, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]
         ],
       ),
+    );
+  }
+
+  void _showCancelDialog(String reservationId) {
+    final reasonCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: surfaceColor,
+          title: Text('Alasan Pembatalan', style: TextStyle(color: onSurfaceColor)),
+          content: TextField(
+            controller: reasonCtrl,
+            style: TextStyle(color: onSurfaceColor),
+            decoration: InputDecoration(
+              hintText: 'Contoh: Ada urusan mendadak',
+              hintStyle: TextStyle(color: textTertiary),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: outlineColor),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: primaryColor),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Tutup', style: TextStyle(color: textTertiary)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (reasonCtrl.text.trim().isEmpty) return;
+                Navigator.pop(context);
+                
+                setState(() => _isLoading = true);
+                try {
+                  await http.post(
+                    Uri.parse('http://192.168.1.4/barbershop_api/request_cancel.php'),
+                    headers: {'Content-Type': 'application/json'},
+                    body: jsonEncode({
+                      'reservation_id': reservationId,
+                      'cancel_reason': reasonCtrl.text.trim(),
+                    }),
+                  );
+                } finally {
+                  _fetchHistory();
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: dangerColor),
+              child: const Text('Kirim Permintaan', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

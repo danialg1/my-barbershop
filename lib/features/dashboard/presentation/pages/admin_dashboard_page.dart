@@ -147,7 +147,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
         return Colors.green;
       case 'rejected':
       case 'canceled':
+      case 'cancelled':
         return Colors.red;
+      case 'cancel_requested':
+        return Colors.orange;
       default:
         return Colors.grey;
     }
@@ -166,7 +169,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       case 'rejected':
         return 'Ditolak';
       case 'canceled':
+      case 'cancelled':
         return 'Dibatalkan';
+      case 'cancel_requested':
+        return 'Minta Batal';
       default:
         return status.toUpperCase();
     }
@@ -1109,8 +1115,74 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
               ),
             ],
           ),
+          if (status == 'cancel_requested') ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Alasan Pembatalan:',
+                    style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    res['cancel_reason'] ?? '-',
+                    style: TextStyle(color: onSurfaceColor, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _handleCancelRequest(res['reservation_id'].toString(), 'reject_cancel'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                    ),
+                    child: const Text('Tolak Batal'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _handleCancelRequest(res['reservation_id'].toString(), 'approve_cancel'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
+                    child: const Text('Terima Batal', style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  void _handleCancelRequest(String reservationId, String action) async {
+    try {
+      await http.post(
+        Uri.parse('http://192.168.1.4/barbershop_api/update_reservation.php'),
+        body: jsonEncode({
+          'reservation_id': reservationId,
+          'action': action,
+        }),
+      );
+      _fetchAllData();
+    } catch (e) {
+      // ignore
+    }
   }
 }
