@@ -718,7 +718,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                         final ImagePicker picker = ImagePicker();
                         final XFile? image = await picker.pickImage(
                           source: ImageSource.gallery,
-                          imageQuality: 100, // HD Quality
+                          imageQuality: 85, // HD tapi tidak melebihi limit PHP
+                          maxWidth: 1024,
+                          maxHeight: 1024,
                         );
                         if (image != null) {
                           final bytes = await image.readAsBytes();

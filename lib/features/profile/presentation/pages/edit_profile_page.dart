@@ -116,13 +116,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 100, // HD Quality
+        imageQuality: 85, // Dikurangi sedikit agar tidak melebihi post_max_size
+        maxWidth: 1024,
+        maxHeight: 1024,
       );
 
       if (image != null) {
         final croppedFile = await ImageCropper().cropImage(
           sourcePath: image.path,
-          compressQuality: 100, // No compression
+          compressQuality: 85, // Compress agar ukurannya pas untuk database
           aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
           uiSettings: [
             AndroidUiSettings(
@@ -171,7 +173,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
           final imageBytes = await _pickedImage!.readAsBytes();
           updateData['photoBase64'] = base64Encode(imageBytes);
         } else if (_photoDeleted) {
-          updateData['photoBase64'] = ''; // Kirim string kosong untuk menghapus foto di database
+          updateData['photoBase64'] =
+              ''; // Kirim string kosong untuk menghapus foto di database
         }
 
         final url = Uri.parse(
@@ -331,19 +334,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Widget _buildProfilePicture() {
     Widget imageWidget;
-    
+
     if (_pickedImage != null) {
       imageWidget = Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: outlineColor, width: 4),
           image: DecorationImage(
-            image: kIsWeb ? NetworkImage(_pickedImage!.path) as ImageProvider : FileImage(File(_pickedImage!.path)),
+            image: kIsWeb
+                ? NetworkImage(_pickedImage!.path) as ImageProvider
+                : FileImage(File(_pickedImage!.path)),
             fit: BoxFit.cover,
           ),
         ),
       );
-    } else if (!_photoDeleted && _currentPhotoBase64.isNotEmpty && _currentPhotoBase64.length > 100) {
+    } else if (!_photoDeleted &&
+        _currentPhotoBase64.isNotEmpty &&
+        _currentPhotoBase64.length > 100) {
       imageWidget = Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
@@ -361,29 +368,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
           shape: BoxShape.circle,
           border: Border.all(color: outlineColor, width: 4),
         ),
-        child: const Icon(
-          Icons.person,
-          size: 80,
-          color: Color(0xFF94A3B8),
-        ),
+        child: const Icon(Icons.person, size: 80, color: Color(0xFF94A3B8)),
       );
     }
 
     return Center(
       child: Stack(
         children: [
-          SizedBox(
-            width: 120,
-            height: 120,
-            child: imageWidget,
-          ),
+          SizedBox(width: 120, height: 120, child: imageWidget),
           Positioned(
             bottom: 0,
             right: 0,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (_pickedImage != null || (!_photoDeleted && _currentPhotoBase64.isNotEmpty && _currentPhotoBase64.length > 100))
+                if (_pickedImage != null ||
+                    (!_photoDeleted &&
+                        _currentPhotoBase64.isNotEmpty &&
+                        _currentPhotoBase64.length > 100))
                   Container(
                     margin: const EdgeInsets.only(right: 8),
                     width: 36,
@@ -401,7 +403,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                     child: IconButton(
                       padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.delete, color: Colors.white, size: 18),
+                      icon: const Icon(
+                        Icons.delete,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       onPressed: () {
                         setState(() {
                           _pickedImage = null;
