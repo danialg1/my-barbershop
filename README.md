@@ -1,5 +1,4 @@
-# my_barbershop
-
+📱 Frontend aplikasi reservasi My Barbershop berbasis mobile menggunakan Flutter dengan implementasi Clean Architecture.
 A new Flutter project.
 
 ## Getting Started
