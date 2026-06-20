@@ -1,16 +1,14 @@
-📱 Frontend aplikasi reservasi My Barbershop berbasis mobile menggunakan Flutter dengan implementasi Clean Architecture.
-A new Flutter project.
+# ✂️ My Barbershop App (Frontend)
 
-## Getting Started
+Aplikasi pemesanan layanan cukur rambut (*barbershop*) modern yang dibangun menggunakan **Flutter** dan **Dart**. Proyek ini menerapkan konsep *Clean Architecture* untuk memastikan kode yang rapi, *scalable*, dan mudah di-*maintenance*.
 
-This project is a starting point for a Flutter application.
+## ✨ Fitur Utama
+* **Multi-Role Access:** Tampilan antarmuka khusus untuk Pelanggan, Barber, dan Admin.
+* **Real-time Reservation:** Pemesanan jadwal cukur secara langsung.
+* **Payment Integration:** Pembayaran digital terintegrasi dengan API Midtrans.
+* **Secure Authentication:** Sistem *login* aman dan verifikasi OTP.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🚀 Teknologi yang Digunakan
+* Framework: Flutter
+* Arsitektur: Clean Architecture
+* Komunikasi API: HTTP Package
