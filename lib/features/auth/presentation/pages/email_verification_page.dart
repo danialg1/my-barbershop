@@ -70,7 +70,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.5/barbershop_api/resend_otp.php'),
+        Uri.parse('http://192.168.1.4/barbershop_api/resend_otp.php'),
         body: jsonEncode({'email': widget.email}),
       );
 
@@ -111,7 +111,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.5/barbershop_api/verify_otp.php'),
+        Uri.parse('http://192.168.1.4/barbershop_api/verify_otp.php'),
         body: jsonEncode({'email': widget.email, 'otp_code': otp}),
       );
 

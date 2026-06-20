@@ -41,7 +41,7 @@ class _HistoryPageState extends State<HistoryPage> {
       if (userId == null) return;
 
       final url = Uri.parse(
-        'http://192.168.1.5/barbershop_api/get_user_history.php',
+        'http://192.168.1.4/barbershop_api/get_user_history.php',
       );
       final response = await http.post(
         url,

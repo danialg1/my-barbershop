@@ -33,7 +33,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _fetchBarbers() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.1.5/barbershop_api/get_active_barbers.php'),
+        Uri.parse('http://192.168.1.4/barbershop_api/get_active_barbers.php'),
       );
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
@@ -58,7 +58,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _fetchServices() async {
     try {
       final url = Uri.parse(
-        'http://192.168.1.5/barbershop_api/get_services.php',
+        'http://192.168.1.4/barbershop_api/get_services.php',
       );
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -96,7 +96,7 @@ class _HomePageState extends State<HomePage> {
 
       if (userId != null && userId.isNotEmpty) {
         final url = Uri.parse(
-          'http://192.168.1.5/barbershop_api/get_profile.php',
+          'http://192.168.1.4/barbershop_api/get_profile.php',
         );
         final response = await http.post(
           url,

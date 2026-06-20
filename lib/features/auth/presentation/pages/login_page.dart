@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import '../../../../core/utils/snackbar_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -54,7 +54,7 @@ class _LoginPageState extends State<LoginPage> {
       final String photoUrl = googleUser.photoUrl ?? '';
 
       final url = Uri.parse(
-        'http://192.168.1.5/barbershop_api/google_login.php',
+        'http://192.168.1.4/barbershop_api/google_login.php',
       );
       final response = await http.post(
         url,
@@ -385,7 +385,7 @@ class _LoginPageState extends State<LoginPage> {
                                     });
                                     try {
                                       final url = Uri.parse(
-                                        'http://192.168.1.5/barbershop_api/login.php',
+                                        'http://192.168.1.4/barbershop_api/login.php',
                                       );
                                       final response = await http.post(
                                         url,

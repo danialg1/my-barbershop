@@ -54,7 +54,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     try {
       // 1. Fetch Stats
       final statsRes = await http.get(
-        Uri.parse('http://192.168.1.5/barbershop_api/get_admin_stats.php'),
+        Uri.parse('http://192.168.1.4/barbershop_api/get_admin_stats.php'),
       );
       if (statsRes.statusCode == 200) {
         final statsJson = jsonDecode(statsRes.body);
@@ -68,7 +68,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
       // 2. Fetch Reservations
       final resRes = await http.get(
-        Uri.parse('http://192.168.1.5/barbershop_api/get_all_reservations.php'),
+        Uri.parse('http://192.168.1.4/barbershop_api/get_all_reservations.php'),
       );
       if (resRes.statusCode == 200) {
         final resJson = jsonDecode(resRes.body);
@@ -79,7 +79,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
       // 3. Fetch Services
       final srvRes = await http.post(
-        Uri.parse('http://192.168.1.5/barbershop_api/admin_crud_services.php'),
+        Uri.parse('http://192.168.1.4/barbershop_api/admin_crud_services.php'),
         body: jsonEncode({'action': 'read'}),
       );
       if (srvRes.statusCode == 200) {
@@ -91,7 +91,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
       // 4. Fetch Barbers
       final barRes = await http.post(
-        Uri.parse('http://192.168.1.5/barbershop_api/admin_crud_users.php'),
+        Uri.parse('http://192.168.1.4/barbershop_api/admin_crud_users.php'),
         body: jsonEncode({'action': 'read', 'role': 'barber'}),
       );
       if (barRes.statusCode == 200) {
@@ -103,7 +103,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
       // 5. Fetch Customers
       final cusRes = await http.post(
-        Uri.parse('http://192.168.1.5/barbershop_api/admin_crud_users.php'),
+        Uri.parse('http://192.168.1.4/barbershop_api/admin_crud_users.php'),
         body: jsonEncode({'action': 'read', 'role': 'customer'}),
       );
       if (cusRes.statusCode == 200) {
@@ -809,7 +809,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                     Navigator.pop(context);
                     await http.post(
                       Uri.parse(
-                        'http://192.168.1.5/barbershop_api/admin_crud_services.php',
+                        'http://192.168.1.4/barbershop_api/admin_crud_services.php',
                       ),
                       body: jsonEncode({
                         'action': isEdit ? 'update' : 'create',
@@ -834,7 +834,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   void _deleteService(String id) async {
     await http.post(
-      Uri.parse('http://192.168.1.5/barbershop_api/admin_crud_services.php'),
+      Uri.parse('http://192.168.1.4/barbershop_api/admin_crud_services.php'),
       body: jsonEncode({'action': 'delete', 'id': id}),
     );
     _fetchAllData();
@@ -889,7 +889,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                 Navigator.pop(context);
                 await http.post(
                   Uri.parse(
-                    'http://192.168.1.5/barbershop_api/admin_crud_users.php',
+                    'http://192.168.1.4/barbershop_api/admin_crud_users.php',
                   ),
                   body: jsonEncode({
                     'action': isEdit ? 'update' : 'create',
@@ -913,7 +913,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   void _deleteUser(String id) async {
     await http.post(
-      Uri.parse('http://192.168.1.5/barbershop_api/admin_crud_users.php'),
+      Uri.parse('http://192.168.1.4/barbershop_api/admin_crud_users.php'),
       body: jsonEncode({'action': 'delete', 'id': id}),
     );
     _fetchAllData();

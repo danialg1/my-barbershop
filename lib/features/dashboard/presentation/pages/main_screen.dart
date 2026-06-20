@@ -39,7 +39,7 @@ class _MainScreenState extends State<MainScreen> {
       if (userId == null) return;
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.5/barbershop_api/get_notifications.php'),
+        Uri.parse('http://192.168.1.4/barbershop_api/get_notifications.php'),
         body: jsonEncode({'user_id': userId}),
       );
 

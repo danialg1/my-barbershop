@@ -45,7 +45,7 @@ class _NotificationPageState extends State<NotificationPage> {
       if (userId == null) return;
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.5/barbershop_api/get_notifications.php'),
+        Uri.parse('http://192.168.1.4/barbershop_api/get_notifications.php'),
         body: jsonEncode({'user_id': userId}),
       );
 
@@ -77,7 +77,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
       final response = await http.post(
         Uri.parse(
-          'http://192.168.1.5/barbershop_api/mark_notification_read.php',
+          'http://192.168.1.4/barbershop_api/mark_notification_read.php',
         ),
         body: jsonEncode({'user_id': userId}),
       );
@@ -107,7 +107,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
       await http.post(
         Uri.parse(
-          'http://192.168.1.5/barbershop_api/mark_notification_read.php',
+          'http://192.168.1.4/barbershop_api/mark_notification_read.php',
         ),
         body: jsonEncode({
           'user_id': userId,
