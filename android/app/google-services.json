@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "844340233730",
+    "project_id": "my-barbershop-2026",
+    "storage_bucket": "my-barbershop-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:844340233730:android:5f852884d6b7ea9677c91b",
+        "android_client_info": {
+          "package_name": "com.example.my_barbershop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "844340233730-1uh4gktuil7t1eid5bs1lfo4ndm5aunf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.my_barbershop",
+            "certificate_hash": "3278befb1ad548fbe6e77519f86a22f5aa05eaf5"
+          }
+        },
+        {
+          "client_id": "844340233730-ko4ktaosi4ajmbu65tip99k2jmbkgmph.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDX4WoF_rSEhAcosd5cJnqDptoUHJViLXo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "844340233730-ko4ktaosi4ajmbu65tip99k2jmbkgmph.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "844340233730-gqn5gm2ijniol0h6ovp1622nos25g3v2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.myBarbershop"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
