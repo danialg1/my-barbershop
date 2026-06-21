@@ -23,6 +23,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _userAddress = 'Memuat alamat...';
   int _visits = 0;
   int _elitePoints = 0;
+  String _userRole = 'customer';
   bool _isDarkMode = false;
 
   @override
@@ -45,6 +46,12 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('user_id');
+      final userRole = prefs.getString('user_role');
+      if (mounted && userRole != null) {
+        setState(() {
+          _userRole = userRole;
+        });
+      }
 
       if (userId != null && userId.isNotEmpty) {
         final url = Uri.parse(
@@ -421,29 +428,34 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         const SizedBox(height: 8),
 
-        // Menu 2: Alamat
-        _buildMenuItem(
-          icon: Icons.location_on_outlined,
-          title: 'Alamat Tersimpan',
-          subtitle: _userAddress,
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddressPage()),
-            );
-            _loadUserAddress();
-          },
-        ),
-        const SizedBox(height: 8),
+        // Menu 2: Alamat (Hanya tampil jika bukan admin)
+        if (_userRole != 'admin') ...[
+          _buildMenuItem(
+            icon: Icons.location_on_outlined,
+            title: 'Alamat Tersimpan',
+            subtitle: _userAddress,
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AddressPage()),
+              );
+              _loadUserAddress();
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
 
         // Menu 3: Bantuan
         _buildMenuItem(
-          icon: Icons.help_outline,
+          icon: Icons.help_outline_rounded,
           title: 'Pusat Bantuan',
+          subtitle: 'FAQ & Customer Service',
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const HelpCenterPage()),
+              MaterialPageRoute(
+                builder: (context) => HelpCenterPage(userRole: _userRole),
+              ),
             );
           },
         ),
