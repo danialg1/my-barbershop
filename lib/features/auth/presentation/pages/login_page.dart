@@ -54,7 +54,7 @@ class _LoginPageState extends State<LoginPage> {
       final String photoUrl = googleUser.photoUrl ?? '';
 
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/google_login.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/google_login.php',
       );
       final response = await http.post(
         url,
@@ -154,20 +154,11 @@ class _LoginPageState extends State<LoginPage> {
                     Column(
                       children: [
                         Container(
-                          width: 128,
-                          height: 128,
                           margin: const EdgeInsets.only(bottom: 24),
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.5),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Image.network(
-                            'https://lh3.googleusercontent.com/aida-public/AB6AXuAcxTxfQIZFAm1UX7winLmwT_wiHkl5rjiDQ3Gf3RhcWmANInjxWctHya5cPlPqfi45I75caaF5RFwJqi9HTn80Xk2CTXbB77a2Edygp9rtX8Brqs_EVV57MVJplNqvhBVi7sGnQWjW37kU_Q5qp_wlgWk1z-m9Y7h0wbjlsdEXjZmFJo1x0PS4xlPnJZUuoJB0ZOdRk69_YxUq1tdJHhrYN9ceSa_WaOAvkSLSMEjLSRMSw3CYaTNC2yD3NE0FfCYr4xZw4un_DG6QyQ',
+                          child: Image.asset(
+                            'assets/logo.png',
+                            width: 160,
+                            height: 160,
                             fit: BoxFit.contain,
                           ),
                         ),
@@ -385,7 +376,7 @@ class _LoginPageState extends State<LoginPage> {
                                     });
                                     try {
                                       final url = Uri.parse(
-                                        'http://192.168.1.4/barbershop_api/login.php',
+                                        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/login.php',
                                       );
                                       final response = await http.post(
                                         url,

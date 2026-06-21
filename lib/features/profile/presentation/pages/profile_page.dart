@@ -48,7 +48,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (userId != null && userId.isNotEmpty) {
         final url = Uri.parse(
-          'http://192.168.1.4/barbershop_api/get_profile.php',
+          'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_profile.php',
         );
         final response = await http.post(
           url,
@@ -88,7 +88,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (userId != null && userId.isNotEmpty) {
         final url = Uri.parse(
-          'http://192.168.1.4/barbershop_api/manage_address.php',
+          'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/manage_address.php',
         );
         final response = await http.post(
           url,

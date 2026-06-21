@@ -49,7 +49,7 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
       if (userId == null) return;
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.4/barbershop_api/get_notifications.php'),
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_notifications.php'),
         body: jsonEncode({'user_id': userId}),
       );
 
@@ -82,7 +82,7 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
       if (userId == null) return;
 
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/get_barber_stats.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_barber_stats.php',
       );
       final response = await http.post(
         url,
@@ -117,7 +117,7 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
       if (userId == null) return;
 
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/update_barber_status.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/update_barber_status.php',
       );
       await http.post(
         url,
@@ -139,7 +139,7 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
       if (userId == null) return;
 
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/barber_reservations.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/barber_reservations.php',
       );
       final response = await http.post(
         url,
@@ -172,7 +172,7 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
   Future<void> _fetchServices() async {
     try {
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/get_services.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_services.php',
       );
       final response = await http.get(url);
 
@@ -203,7 +203,7 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
       if (userId == null) return;
 
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/barber_reservations.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/barber_reservations.php',
       );
       final response = await http.post(
         url,
@@ -930,7 +930,7 @@ class _BarberDashboardPageState extends State<BarberDashboardPage> {
   void _handleCancelRequest(String reservationId, String action) async {
     try {
       await http.post(
-        Uri.parse('http://192.168.1.4/barbershop_api/update_reservation.php'),
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/update_reservation.php'),
         body: jsonEncode({
           'reservation_id': reservationId,
           'action': action,

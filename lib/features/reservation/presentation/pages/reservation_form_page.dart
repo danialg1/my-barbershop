@@ -79,7 +79,7 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('user_id');
       if (userId != null && userId.isNotEmpty) {
-        final url = Uri.parse('http://192.168.1.4/barbershop_api/get_profile.php');
+        final url = Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_profile.php');
         final response = await http.post(
           url,
           headers: {'Content-Type': 'application/json'},
@@ -110,7 +110,7 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
   Future<void> _fetchServices() async {
     try {
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/get_services.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_services.php',
       );
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -146,7 +146,7 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
   Future<void> _fetchBarbers() async {
     try {
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/get_barbers.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_barbers.php',
       );
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -719,7 +719,7 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
       final reservationDate = '$dateStr $_selectedTime:00';
 
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/create_payment.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/create_payment.php',
       );
       final response = await http.post(
         url,

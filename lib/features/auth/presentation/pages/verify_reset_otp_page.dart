@@ -71,7 +71,7 @@ class _VerifyResetOtpPageState extends State<VerifyResetOtpPage> {
     });
 
     try {
-      final url = Uri.parse('http://192.168.1.4/barbershop_api/verify_reset_otp.php');
+      final url = Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/verify_reset_otp.php');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},

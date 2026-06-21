@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 
@@ -37,7 +38,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadCache();
     _fetchAllData();
+  }
+
+  Future<void> _loadCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? cachedServices = prefs.getString('cached_services');
+    if (cachedServices != null) {
+      if (mounted) {
+        setState(() {
+          _servicesList = jsonDecode(cachedServices);
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -54,7 +69,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     try {
       // 1. Fetch Stats
       final statsRes = await http.get(
-        Uri.parse('http://192.168.1.4/barbershop_api/get_admin_stats.php'),
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_admin_stats.php'),
       );
       if (statsRes.statusCode == 200) {
         final statsJson = jsonDecode(statsRes.body);
@@ -68,7 +83,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
       // 2. Fetch Reservations
       final resRes = await http.get(
-        Uri.parse('http://192.168.1.4/barbershop_api/get_all_reservations.php'),
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_all_reservations.php'),
       );
       if (resRes.statusCode == 200) {
         final resJson = jsonDecode(resRes.body);
@@ -79,19 +94,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
       // 3. Fetch Services
       final srvRes = await http.post(
-        Uri.parse('http://192.168.1.4/barbershop_api/admin_crud_services.php'),
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/admin_crud_services.php'),
         body: jsonEncode({'action': 'read'}),
       );
       if (srvRes.statusCode == 200) {
         final srvJson = jsonDecode(srvRes.body);
         if (srvJson['status'] == 'success') {
           _servicesList = srvJson['data'] ?? [];
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('cached_services', jsonEncode(_servicesList));
         }
       }
 
       // 4. Fetch Barbers
       final barRes = await http.post(
-        Uri.parse('http://192.168.1.4/barbershop_api/admin_crud_users.php'),
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/admin_crud_users.php'),
         body: jsonEncode({'action': 'read', 'role': 'barber'}),
       );
       if (barRes.statusCode == 200) {
@@ -103,7 +120,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
       // 5. Fetch Customers
       final cusRes = await http.post(
-        Uri.parse('http://192.168.1.4/barbershop_api/admin_crud_users.php'),
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/admin_crud_users.php'),
         body: jsonEncode({'action': 'read', 'role': 'customer'}),
       );
       if (cusRes.statusCode == 200) {
@@ -491,56 +508,89 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                         final srv = _servicesList[index];
                         return Card(
                           color: surfaceColor,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: srv['image_url'] != null
-                                  ? Image.network(
-                                      srv['image_url'],
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) => Icon(
-                                            Icons.room_service,
-                                            color: primaryColor,
-                                          ),
-                                    )
-                                  : Icon(
-                                      Icons.room_service,
-                                      color: primaryColor,
+                          elevation: 2,
+                          shadowColor: Colors.black12,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: primaryColor.withValues(alpha: 0.1),
+                              width: 1,
+                            ),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () => _showServiceDialog(srv),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color: primaryColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.05),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
-                            ),
-                            title: Text(
-                              srv['name'],
-                              style: TextStyle(
-                                color: onSurfaceColor,
-                                fontWeight: FontWeight.bold,
+                                    clipBehavior: Clip.antiAlias,
+                                    child: srv['image_url'] != null
+                                        ? Image.network(
+                                            srv['image_url'],
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) =>
+                                                Icon(Icons.room_service, color: primaryColor, size: 32),
+                                          )
+                                        : Icon(Icons.room_service, color: primaryColor, size: 32),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          srv['name'],
+                                          style: TextStyle(
+                                            color: onSurfaceColor,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _formatCurrency(int.tryParse(srv['price'].toString()) ?? 0),
+                                          style: TextStyle(
+                                            color: primaryColor,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: Colors.blue),
+                                        onPressed: () => _showServiceDialog(srv),
+                                        tooltip: 'Edit',
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        onPressed: () => _deleteService(srv['id']),
+                                        tooltip: 'Hapus',
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            ),
-                            subtitle: Text(
-                              _formatCurrency(
-                                int.tryParse(srv['price'].toString()) ?? 0,
-                              ),
-                              style: TextStyle(color: primaryColor),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.edit, color: Colors.blue),
-                                  onPressed: () => _showServiceDialog(srv),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _deleteService(srv['id']),
-                                ),
-                              ],
                             ),
                           ),
                         );
@@ -640,14 +690,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                         final usr = list[index];
                         final String photoBase64 = usr['photo'] ?? '';
                         Widget avatarWidget;
-                        if (photoBase64.isNotEmpty && photoBase64.length > 100) {
+                        if (photoBase64.isNotEmpty &&
+                            photoBase64.length > 100) {
                           avatarWidget = CircleAvatar(
-                            backgroundImage: MemoryImage(base64Decode(photoBase64)),
-                            backgroundColor: primaryColor.withValues(alpha: 0.2),
+                            backgroundImage: MemoryImage(
+                              base64Decode(photoBase64),
+                            ),
+                            backgroundColor: primaryColor.withValues(
+                              alpha: 0.2,
+                            ),
                           );
                         } else {
                           avatarWidget = CircleAvatar(
-                            backgroundColor: primaryColor.withValues(alpha: 0.2),
+                            backgroundColor: primaryColor.withValues(
+                              alpha: 0.2,
+                            ),
                             child: Icon(Icons.person, color: primaryColor),
                           );
                         }
@@ -724,15 +781,31 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                         final ImagePicker picker = ImagePicker();
                         final XFile? image = await picker.pickImage(
                           source: ImageSource.gallery,
-                          imageQuality: 85, // HD tapi tidak melebihi limit PHP
-                          maxWidth: 1024,
-                          maxHeight: 1024,
+                          imageQuality: 85,
                         );
                         if (image != null) {
-                          final bytes = await image.readAsBytes();
-                          setStateDialog(() {
-                            base64Image = base64Encode(bytes);
-                          });
+                          final CroppedFile? croppedFile = await ImageCropper().cropImage(
+                            sourcePath: image.path,
+                            uiSettings: [
+                              AndroidUiSettings(
+                                toolbarTitle: 'Potong Foto Layanan',
+                                toolbarColor: primaryColor,
+                                toolbarWidgetColor: Colors.white,
+                                initAspectRatio: CropAspectRatioPreset.square,
+                                lockAspectRatio: true,
+                              ),
+                              IOSUiSettings(
+                                title: 'Potong Foto Layanan',
+                                aspectRatioLockEnabled: true,
+                              ),
+                            ],
+                          );
+                          if (croppedFile != null) {
+                            final bytes = await croppedFile.readAsBytes();
+                            setStateDialog(() {
+                              base64Image = base64Encode(bytes);
+                            });
+                          }
                         }
                       },
                       child: Container(
@@ -817,7 +890,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                     Navigator.pop(context);
                     await http.post(
                       Uri.parse(
-                        'http://192.168.1.4/barbershop_api/admin_crud_services.php',
+                        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/admin_crud_services.php',
                       ),
                       body: jsonEncode({
                         'action': isEdit ? 'update' : 'create',
@@ -842,7 +915,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   void _deleteService(String id) async {
     await http.post(
-      Uri.parse('http://192.168.1.4/barbershop_api/admin_crud_services.php'),
+      Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/admin_crud_services.php'),
       body: jsonEncode({'action': 'delete', 'id': id}),
     );
     _fetchAllData();
@@ -897,7 +970,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                 Navigator.pop(context);
                 await http.post(
                   Uri.parse(
-                    'http://192.168.1.4/barbershop_api/admin_crud_users.php',
+                    'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/admin_crud_users.php',
                   ),
                   body: jsonEncode({
                     'action': isEdit ? 'update' : 'create',
@@ -921,7 +994,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   void _deleteUser(String id) async {
     await http.post(
-      Uri.parse('http://192.168.1.4/barbershop_api/admin_crud_users.php'),
+      Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/admin_crud_users.php'),
       body: jsonEncode({'action': 'delete', 'id': id}),
     );
     _fetchAllData();
@@ -1130,7 +1203,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                 children: [
                   const Text(
                     'Alasan Pembatalan:',
-                    style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -1145,7 +1222,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => _handleCancelRequest(res['reservation_id'].toString(), 'reject_cancel'),
+                    onPressed: () => _handleCancelRequest(
+                      res['reservation_id'].toString(),
+                      'reject_cancel',
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       side: const BorderSide(color: Colors.red),
@@ -1156,11 +1236,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => _handleCancelRequest(res['reservation_id'].toString(), 'approve_cancel'),
+                    onPressed: () => _handleCancelRequest(
+                      res['reservation_id'].toString(),
+                      'approve_cancel',
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                     ),
-                    child: const Text('Terima Batal', style: TextStyle(color: Colors.white)),
+                    child: const Text(
+                      'Terima Batal',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
               ],
@@ -1174,11 +1260,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   void _handleCancelRequest(String reservationId, String action) async {
     try {
       await http.post(
-        Uri.parse('http://192.168.1.4/barbershop_api/update_reservation.php'),
-        body: jsonEncode({
-          'reservation_id': reservationId,
-          'action': action,
-        }),
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/update_reservation.php'),
+        body: jsonEncode({'reservation_id': reservationId, 'action': action}),
       );
       _fetchAllData();
     } catch (e) {

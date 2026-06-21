@@ -41,7 +41,7 @@ class _AddressPageState extends State<AddressPage> {
       if (userId == null) return;
 
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/manage_address.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/manage_address.php',
       );
       final response = await http.post(
         url,
@@ -131,7 +131,7 @@ class _AddressPageState extends State<AddressPage> {
                       if (userId == null) return;
 
                       final url = Uri.parse(
-                        'http://192.168.1.4/barbershop_api/manage_address.php',
+                        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/manage_address.php',
                       );
                       final body = {
                         'user_id': userId,
@@ -277,7 +277,7 @@ class _AddressPageState extends State<AddressPage> {
                                 if (userId == null) return;
 
                                 final url = Uri.parse(
-                                  'http://192.168.1.4/barbershop_api/manage_address.php',
+                                  'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/manage_address.php',
                                 );
                                 try {
                                   await http.post(

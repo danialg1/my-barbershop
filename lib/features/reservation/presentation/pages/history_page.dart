@@ -41,7 +41,7 @@ class _HistoryPageState extends State<HistoryPage> {
       if (userId == null) return;
 
       final url = Uri.parse(
-        'http://192.168.1.4/barbershop_api/get_user_history.php',
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_user_history.php',
       );
       final response = await http.post(
         url,
@@ -432,7 +432,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 setState(() => _isLoading = true);
                 try {
                   await http.post(
-                    Uri.parse('http://192.168.1.4/barbershop_api/request_cancel.php'),
+                    Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/request_cancel.php'),
                     headers: {'Content-Type': 'application/json'},
                     body: jsonEncode({
                       'reservation_id': reservationId,

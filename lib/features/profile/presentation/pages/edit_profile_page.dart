@@ -55,7 +55,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (userId != null && userId.isNotEmpty) {
         final url = Uri.parse(
-          'http://192.168.1.4/barbershop_api/get_profile.php',
+          'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_profile.php',
         );
         final response = await http.post(
           url,
@@ -178,7 +178,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         }
 
         final url = Uri.parse(
-          'http://192.168.1.4/barbershop_api/update_profile.php',
+          'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/update_profile.php',
         );
         final response = await http.post(
           url,

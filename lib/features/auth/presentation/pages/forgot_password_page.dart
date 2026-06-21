@@ -39,7 +39,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
 
     try {
-      final url = Uri.parse('http://192.168.1.4/barbershop_api/forgot_password.php');
+      final url = Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/forgot_password.php');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
