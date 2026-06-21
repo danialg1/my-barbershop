@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../reservation/presentation/pages/reservation_form_page.dart';
 import '../../../../main.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,6 +20,8 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingServices = true;
   List<dynamic> _barbersList = [];
   bool _isLoadingBarbers = true;
+  List<dynamic> _promosList = [];
+  bool _isLoadingPromos = true;
   String _searchQuery = '';
 
   @override
@@ -27,6 +30,7 @@ class _HomePageState extends State<HomePage> {
     _loadUserData();
     _fetchServices();
     _fetchBarbers();
+    _fetchPromos();
     profileUpdateNotifier.addListener(_loadUserData);
   }
 
@@ -76,6 +80,47 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() {
           _isLoadingServices = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchPromos() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedPromos = prefs.getString('cached_promos');
+      if (cachedPromos != null) {
+        setState(() {
+          _promosList = jsonDecode(cachedPromos);
+          _isLoadingPromos = false;
+        });
+      }
+
+      final url = Uri.parse(
+        'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/crud_promos.php',
+      );
+      final response = await http.post(
+        url,
+        body: jsonEncode({'action': 'read'}),
+      );
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse['status'] == 'success') {
+          if (mounted) {
+            final data = jsonResponse['data'] as List;
+            final activePromos = data.where((p) => p['is_active'] == '1' || p['is_active'] == 1).toList();
+            setState(() {
+              _promosList = activePromos;
+              _isLoadingPromos = false;
+            });
+            await prefs.setString('cached_promos', jsonEncode(activePromos));
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingPromos = false;
         });
       }
     }
@@ -232,7 +277,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-    );
+    ).animate().fade(duration: 400.ms).slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildSearchBar() {
@@ -263,57 +308,73 @@ class _HomePageState extends State<HomePage> {
           contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
-    );
+    ).animate().fade(duration: 500.ms).scaleXY(begin: 0.9, end: 1.0);
   }
 
   Widget _buildPromoBanner() {
-    return Container(
+    if (_isLoadingPromos) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_promosList.isEmpty) return const SizedBox.shrink();
+
+    return SizedBox(
       height: 128,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        image: const DecorationImage(
-          image: NetworkImage(
-            'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop',
-          ), // Placeholder Barbershop
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          gradient: LinearGradient(
-            colors: [
-              Colors.black.withValues(alpha: 0.8),
-              Colors.black.withValues(alpha: 0.3),
-            ],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Diskon 20% Potong\nRambut Pertama',
-              style: TextStyle(
-                color: primaryColor,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                height: 1.2,
+      child: PageView.builder(
+        itemCount: _promosList.length,
+        itemBuilder: (context, index) {
+          final promo = _promosList[index];
+          return Container(
+            margin: const EdgeInsets.only(right: 16),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              image: const DecorationImage(
+                image: NetworkImage(
+                  'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop',
+                ),
+                fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Gunakan kode: BARBER20',
-              style: TextStyle(color: Colors.white, fontSize: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withValues(alpha: 0.8),
+                    Colors.black.withValues(alpha: 0.3),
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    promo['title'],
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Gunakan kode: ${promo['code']}',
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          );
+        },
       ),
-    );
+    ).animate().fade(duration: 500.ms).slideY(begin: 0.1, end: 0);
   }
 
   Widget _buildLayananKami() {
@@ -509,7 +570,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
       ],
-    );
+    ).animate().fade(duration: 600.ms).slideX(begin: 0.1, end: 0);
   }
 
   Widget _buildBarberTersedia() {
@@ -647,6 +708,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
       ],
-    );
+    ).animate().fade(duration: 700.ms).slideX(begin: 0.1, end: 0);
   }
 }

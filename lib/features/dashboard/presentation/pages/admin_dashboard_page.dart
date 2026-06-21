@@ -4,8 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
-import '../../../auth/presentation/pages/login_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
+import '../../../notification/presentation/pages/notification_page.dart';
+import '../../../../core/utils/snackbar_utils.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -22,6 +23,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   int _currentIndex = 0;
   bool _isLoading = true;
+  int _unreadCount = 0;
 
   // Stats Data
   int _totalIncome = 0;
@@ -33,6 +35,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   List<dynamic> _servicesList = [];
   List<dynamic> _barbersList = [];
   List<dynamic> _customersList = [];
+  List<dynamic> _promosList = [];
 
   @override
   void initState() {
@@ -40,18 +43,70 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     _tabController = TabController(length: 2, vsync: this);
     _loadCache();
     _fetchAllData();
+    _fetchUnreadCount();
+  }
+
+  Future<void> _fetchUnreadCount() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id');
+      if (userId == null) return;
+
+      final response = await http.post(
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_notifications.php'),
+        body: jsonEncode({'user_id': userId}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success') {
+          final List notifications = data['data'];
+          int count = 0;
+          for (var notif in notifications) {
+            if (notif['is_read'] == 0 || notif['is_read'] == '0') {
+              count++;
+            }
+          }
+          if (mounted) {
+            setState(() {
+              _unreadCount = count;
+            });
+            prefs.setInt('cached_admin_unread', count);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching unread count: $e');
+    }
   }
 
   Future<void> _loadCache() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? cachedServices = prefs.getString('cached_services');
+    
+    final String? cachedServices = prefs.getString('cached_admin_services');
     if (cachedServices != null) {
-      if (mounted) {
-        setState(() {
-          _servicesList = jsonDecode(cachedServices);
-          _isLoading = false;
-        });
-      }
+      _servicesList = jsonDecode(cachedServices);
+    }
+    
+    final String? cachedReservations = prefs.getString('cached_admin_reservations');
+    if (cachedReservations != null) {
+      _reservations = jsonDecode(cachedReservations);
+    }
+
+    final String? cachedStats = prefs.getString('cached_admin_stats');
+    if (cachedStats != null) {
+      final data = jsonDecode(cachedStats);
+      _totalIncome = data['total_income'] ?? 0;
+      _totalCustomers = data['total_customers'] ?? 0;
+      _totalBarbers = data['total_barbers'] ?? 0;
+    }
+
+    _unreadCount = prefs.getInt('cached_admin_unread') ?? 0;
+
+    if (mounted && (cachedServices != null || cachedReservations != null || cachedStats != null)) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -78,6 +133,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
           _totalIncome = data['total_income'] ?? 0;
           _totalCustomers = data['total_customers'] ?? 0;
           _totalBarbers = data['total_barbers'] ?? 0;
+          
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('cached_admin_stats', jsonEncode(data));
         }
       }
 
@@ -89,6 +147,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
         final resJson = jsonDecode(resRes.body);
         if (resJson['status'] == 'success') {
           _reservations = resJson['data'] ?? [];
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('cached_admin_reservations', jsonEncode(_reservations));
         }
       }
 
@@ -102,7 +162,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
         if (srvJson['status'] == 'success') {
           _servicesList = srvJson['data'] ?? [];
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('cached_services', jsonEncode(_servicesList));
+          await prefs.setString('cached_admin_services', jsonEncode(_servicesList));
         }
       }
 
@@ -127,6 +187,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
         final cusJson = jsonDecode(cusRes.body);
         if (cusJson['status'] == 'success') {
           _customersList = cusJson['data'] ?? [];
+        }
+      }
+
+      // 6. Fetch Promos
+      final promoRes = await http.post(
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/crud_promos.php'),
+        body: jsonEncode({'action': 'read'}),
+      );
+      if (promoRes.statusCode == 200) {
+        final promoJson = jsonDecode(promoRes.body);
+        if (promoJson['status'] == 'success') {
+          _promosList = promoJson['data'] ?? [];
         }
       }
     } catch (e) {
@@ -216,6 +288,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     final List<Widget> pages = [
       _buildHomeTab(bgColor, surfaceColor, onSurfaceColor, textTertiary),
       _buildServicesTab(bgColor, surfaceColor, onSurfaceColor, textTertiary),
+      _buildPromoTab(bgColor, surfaceColor, onSurfaceColor, textTertiary),
       _buildUsersTab(bgColor, surfaceColor, onSurfaceColor, textTertiary),
       const ProfilePage(),
     ];
@@ -243,6 +316,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
             icon: Icon(Icons.room_service),
             label: 'Layanan',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: 'Promo'),
           BottomNavigationBarItem(icon: Icon(Icons.groups), label: 'Pengguna'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
@@ -290,21 +364,45 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                   ),
                 ],
               ),
-              IconButton(
-                icon: Icon(Icons.logout, color: textTertiary),
-                onPressed: () async {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.clear();
-                  if (mounted) {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
+              Stack(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.notifications_none, color: onSurfaceColor),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationPage(),
+                        ),
+                      ).then((_) => _fetchUnreadCount());
+                    },
+                  ),
+                  if (_unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$_unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                      (route) => false,
-                    );
-                  }
-                },
+                    ),
+                ],
               ),
             ],
           ),
@@ -1266,6 +1364,246 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       _fetchAllData();
     } catch (e) {
       // ignore
+    }
+  }
+
+  // --- PROMO TAB ---
+  Widget _buildPromoTab(
+    Color bgColor,
+    Color surfaceColor,
+    Color onSurfaceColor,
+    Color textTertiary,
+  ) {
+    return Scaffold(
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        backgroundColor: bgColor,
+        title: Text(
+          'Manajemen Promo',
+          style: TextStyle(color: onSurfaceColor),
+        ),
+        automaticallyImplyLeading: false,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _fetchAllData,
+              child: _promosList.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: 400,
+                          child: Center(
+                            child: Text(
+                              'Tidak ada promo diskon',
+                              style: TextStyle(color: textTertiary),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _promosList.length,
+                      itemBuilder: (context, index) {
+                        final promo = _promosList[index];
+                        final isActive = promo['is_active'].toString() == '1';
+                        return Card(
+                          color: surfaceColor,
+                          elevation: 2,
+                          shadowColor: Colors.black12,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: isActive ? Colors.green.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(16),
+                            leading: Icon(
+                              Icons.local_offer,
+                              color: isActive ? Colors.green : Colors.red,
+                              size: 40,
+                            ),
+                            title: Text(
+                              promo['code'],
+                              style: TextStyle(
+                                color: onSurfaceColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 4),
+                                Text(
+                                  promo['description'] ?? '',
+                                  style: TextStyle(color: textTertiary),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: primaryColor.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Diskon ${promo['discount_percent']}%',
+                                    style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit, color: Colors.blue),
+                                  onPressed: () => _showPromoDialog(promo),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _deletePromo(promo['id'].toString()),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () => _showPromoDialog(null),
+      ),
+    );
+  }
+
+  void _showPromoDialog(dynamic promo) {
+    final isEdit = promo != null;
+    final codeCtrl = TextEditingController(text: isEdit ? promo['code'] : '');
+    final descCtrl = TextEditingController(text: isEdit ? promo['description'] : '');
+    final discountCtrl = TextEditingController(text: isEdit ? promo['discount_percent'].toString() : '');
+    bool isActive = isEdit ? (promo['is_active'].toString() == '1') : true;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (statefulContext, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1F2937), // surfaceColor
+              title: Text(
+                isEdit ? 'Edit Promo' : 'Tambah Promo',
+                style: const TextStyle(color: Colors.white),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: codeCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        labelText: 'Kode Promo',
+                        labelStyle: TextStyle(color: Colors.grey),
+                        hintText: 'Cth: LEBARAN20',
+                        hintStyle: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: discountCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Diskon (%)',
+                        labelStyle: TextStyle(color: Colors.grey),
+                        hintText: 'Cth: 20',
+                        hintStyle: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: descCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        labelText: 'Deskripsi',
+                        labelStyle: TextStyle(color: Colors.grey),
+                        hintText: 'Cth: Diskon spesial hari raya',
+                        hintStyle: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text('Status Aktif', style: TextStyle(color: Colors.white)),
+                      value: isActive,
+                      onChanged: (val) {
+                        setStateDialog(() => isActive = val);
+                      },
+                      activeThumbColor: primaryColor,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                  onPressed: () async {
+                    if (codeCtrl.text.isEmpty || discountCtrl.text.isEmpty) {
+                      SnackbarUtils.showError(context, 'Kode dan Diskon wajib diisi');
+                      return;
+                    }
+                    Navigator.pop(dialogContext);
+                    try {
+                      await http.post(
+                        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/crud_promos.php'),
+                        body: jsonEncode({
+                          'action': isEdit ? 'update' : 'create',
+                          'id': isEdit ? promo['id'] : null,
+                          'code': codeCtrl.text.toUpperCase(),
+                          'description': descCtrl.text,
+                          'discount_percent': discountCtrl.text,
+                          'is_active': isActive ? 1 : 0,
+                        }),
+                      );
+                      _fetchAllData();
+                      if (mounted) SnackbarUtils.showSuccess(context, 'Promo berhasil disimpan!');
+                    } catch (e) {
+                      if (mounted) SnackbarUtils.showError(context, 'Gagal menyimpan promo');
+                    }
+                  },
+                  child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _deletePromo(String id) async {
+    try {
+      await http.post(
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/crud_promos.php'),
+        body: jsonEncode({'action': 'delete', 'id': id}),
+      );
+      _fetchAllData();
+      if (mounted) SnackbarUtils.showSuccess(context, 'Promo berhasil dihapus');
+    } catch (e) {
+      if (mounted) SnackbarUtils.showError(context, 'Gagal menghapus promo');
     }
   }
 }

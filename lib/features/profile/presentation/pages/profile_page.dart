@@ -8,6 +8,7 @@ import '../../../auth/presentation/pages/login_page.dart';
 import 'edit_profile_page.dart';
 import 'address_page.dart';
 import 'help_center_page.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -159,11 +160,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 child: Column(
                   children: [
-                    _buildProfileCard(),
+                    _buildProfileCard().animate().fade(duration: 400.ms).slideY(begin: -0.2, end: 0),
                     const SizedBox(height: 24),
-                    _buildMenuList(),
+                    _buildMenuList().animate().fade(duration: 500.ms).slideX(begin: 0.1, end: 0),
                     const SizedBox(height: 32),
-                    _buildLogoutButton(context), // Parsing context ke method
+                    _buildLogoutButton(context).animate().fade(duration: 600.ms).scaleXY(begin: 0.9, end: 1.0),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -627,6 +628,13 @@ class _ProfilePageState extends State<ProfilePage> {
       onPressed: () async {
         try {
           final prefs = await SharedPreferences.getInstance();
+          final userId = prefs.getString('user_id');
+          if (userId != null) {
+            await http.post(
+              Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/remove_fcm_token.php'),
+              body: jsonEncode({'user_id': userId}),
+            );
+          }
           await prefs.clear();
 
           if (!context.mounted) return;

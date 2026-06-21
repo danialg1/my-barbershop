@@ -55,6 +55,11 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
   bool _useDiscount = false;
   bool _isLoadingProfile = true;
 
+  final TextEditingController _promoController = TextEditingController();
+  int _promoDiscount = 0;
+  String _appliedPromoCode = '';
+  bool _isValidatingPromo = false;
+
   final List<String> _timeSlots = [
     '10:00',
     '11:00',
@@ -585,8 +590,8 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: _useDiscount ? textTertiary : onSurfaceColor,
-                  decoration: _useDiscount ? TextDecoration.lineThrough : null,
+                  color: (_useDiscount || _promoDiscount > 0) ? textTertiary : onSurfaceColor,
+                  decoration: (_useDiscount || _promoDiscount > 0) ? TextDecoration.lineThrough : null,
                 ),
               ),
             ],
@@ -596,7 +601,7 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   'Setelah Diskon (50%)',
                   style: TextStyle(
                     fontSize: 14,
@@ -606,7 +611,30 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
                 ),
                 Text(
                   'Rp ${(_getSelectedServicePriceAsInt() / 2).toInt()}',
-                  style: TextStyle(
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ] else if (_promoDiscount > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Setelah Diskon ($_promoDiscount%)',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                Text(
+                  'Rp ${(_getSelectedServicePriceAsInt() * (100 - _promoDiscount) / 100).toInt()}',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
@@ -651,6 +679,7 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
                     onChanged: (val) {
                       setState(() {
                         _useDiscount = val;
+                        if (val) _promoDiscount = 0; // Disable promo if using elite points
                       });
                     },
                   ),
@@ -662,9 +691,91 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
               'Kumpulkan 25 Poin Elite untuk diskon 50%! (Poin: $_elitePoints)',
               style: TextStyle(fontSize: 12, color: primaryColor),
             ),
+            
+          const SizedBox(height: 16),
+          // Promo Code Input
+          if (!_useDiscount)
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _promoController,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      hintText: 'Kode Promo',
+                      filled: true,
+                      fillColor: surfaceColor,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: outlineColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: outlineColor),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _isValidatingPromo ? null : _validatePromo,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                  child: _isValidatingPromo
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Terapkan', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          if (_promoDiscount > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Promo $_appliedPromoCode diterapkan! Diskon $_promoDiscount%',
+                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  Future<void> _validatePromo() async {
+    final code = _promoController.text.trim().toUpperCase();
+    if (code.isEmpty) return;
+
+    setState(() => _isValidatingPromo = true);
+    try {
+      final res = await http.post(
+        Uri.parse('https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/validate_promo.php'),
+        body: jsonEncode({'code': code}),
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['status'] == 'success') {
+          setState(() {
+            _promoDiscount = int.tryParse(data['data']['discount_percent'].toString()) ?? 0;
+            _appliedPromoCode = data['data']['code'];
+            _useDiscount = false; // Disable elite points
+          });
+          if (mounted) SnackbarUtils.showSuccess(context, 'Promo berhasil diterapkan!');
+        } else {
+          setState(() {
+            _promoDiscount = 0;
+            _appliedPromoCode = '';
+          });
+          if (mounted) SnackbarUtils.showError(context, data['message']);
+        }
+      }
+    } catch (e) {
+      if (mounted) SnackbarUtils.showError(context, 'Terjadi kesalahan saat memvalidasi promo');
+    } finally {
+      if (mounted) setState(() => _isValidatingPromo = false);
+    }
   }
 
   Widget _buildSummaryRow(String label, String value) {
@@ -730,6 +841,7 @@ class _ReservationFormPageState extends State<ReservationFormPage> {
           'barber_id': _selectedBarberId,
           'service_id': _selectedServiceId,
           'use_discount': _useDiscount,
+          'promo_discount': _useDiscount ? 0 : _promoDiscount,
         }),
       );
 

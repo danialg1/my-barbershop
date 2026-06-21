@@ -10,6 +10,7 @@ import '../../../dashboard/presentation/pages/admin_dashboard_page.dart';
 import 'register_page.dart';
 import 'email_verification_page.dart';
 import 'forgot_password_page.dart';
+import '../../../../core/services/notification_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -74,6 +75,11 @@ class _LoginPageState extends State<LoginPage> {
           await prefs.setString('user_id', data['id'].toString());
           await prefs.setString('user_name', data['name'].toString());
           await prefs.setString('user_role', data['role'] ?? 'customer');
+
+          // Upload FCM Token
+          try {
+            NotificationService.uploadFcmToken();
+          } catch (_) {}
 
           if (!mounted) return;
           if (data['role'] == 'barber') {
@@ -412,6 +418,11 @@ class _LoginPageState extends State<LoginPage> {
                                             'user_role',
                                             data['role'] ?? 'customer',
                                           );
+
+                                          // Upload FCM Token
+                                          try {
+                                            NotificationService.uploadFcmToken();
+                                          } catch (_) {}
 
                                           if (!context.mounted) return;
                                           if (data['role'] == 'admin') {

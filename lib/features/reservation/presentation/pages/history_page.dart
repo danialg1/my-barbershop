@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -40,6 +41,15 @@ class _HistoryPageState extends State<HistoryPage> {
       final userId = prefs.getString('user_id');
       if (userId == null) return;
 
+      // Caching Mechanism
+      final cachedHistory = prefs.getString('cached_history_$userId');
+      if (cachedHistory != null && mounted && _reservations.isEmpty) {
+        setState(() {
+          _reservations = jsonDecode(cachedHistory);
+          _isLoading = false;
+        });
+      }
+
       final url = Uri.parse(
         'https://aleen-pseudoanaphylactic-bewailingly.ngrok-free.dev/barbershop_api/get_user_history.php',
       );
@@ -52,6 +62,9 @@ class _HistoryPageState extends State<HistoryPage> {
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
         if (jsonResponse['status'] == 'success') {
+          // Update Cache
+          await prefs.setString('cached_history_$userId', jsonEncode(jsonResponse['data'] ?? []));
+          
           if (mounted) {
             setState(() {
               _reservations = jsonResponse['data'] ?? [];
@@ -187,7 +200,7 @@ class _HistoryPageState extends State<HistoryPage> {
       onRefresh: _fetchHistory,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.only(top: 8, bottom: 20),
         itemCount: data.length,
         itemBuilder: (context, index) {
           final res = data[index];
@@ -218,18 +231,15 @@ class _HistoryPageState extends State<HistoryPage> {
             statusColor = Colors.orange;
           }
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: _buildReservationCard(
-              id: res['reservation_id'].toString(),
-              status: statusText,
-              rawStatus: rawStatus,
-              statusColor: statusColor,
-              barberName: res['barber_name'] ?? '-',
-              date: _formatDate(res['reservation_date'] ?? ''),
-              serviceName: res['service_name'] ?? '-',
-              price: 'Rp ${res['service_price'] ?? '0'}',
-            ),
+          return _buildReservationCard(
+            id: res['reservation_id'].toString(),
+            status: statusText,
+            rawStatus: rawStatus,
+            statusColor: statusColor,
+            barberName: res['barber_name'] ?? '-',
+            date: _formatDate(res['reservation_date'] ?? ''),
+            serviceName: res['service_name'] ?? '-',
+            price: 'Rp ${res['service_price'] ?? '0'}',
           );
         },
       ),
@@ -247,154 +257,267 @@ class _HistoryPageState extends State<HistoryPage> {
     required String price,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: outlineColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.only(bottom: 8),
+      color: surfaceColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Card (ID & Status)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '#RES-$id',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: textTertiary,
-                  fontWeight: FontWeight.bold,
+          // 1. Header (Shop Info & Status)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.storefront, size: 18, color: onSurfaceColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      'My Barbershop',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: onSurfaceColor,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right, size: 18, color: textTertiary),
+                  ],
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  status,
+                Text(
+                  status.toUpperCase(),
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 12,
                     color: statusColor,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-
+          Divider(height: 1, color: outlineColor),
+          
+          // 2. Item Body (Image, Service, Barber, Price)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Divider(color: outlineColor, height: 1),
-          ),
-
-          // Barber Info & Date
-          Row(
-            children: [
-              Icon(Icons.content_cut, size: 16, color: textTertiary),
-              const SizedBox(width: 8),
-              Text(
-                'Barber: $barberName',
-                style: TextStyle(fontSize: 14, color: onSurfaceColor),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.calendar_today, size: 16, color: textTertiary),
-              const SizedBox(width: 8),
-              Text(date, style: TextStyle(fontSize: 14, color: textTertiary)),
-            ],
-          ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Divider(color: outlineColor, height: 1),
-          ),
-
-          // Service & Price
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                serviceName,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: onSurfaceColor,
-                  fontWeight: FontWeight.w500,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: outlineColor),
+                  ),
+                  child: Center(
+                    child: Icon(Icons.content_cut, color: textTertiary, size: 30),
+                  ),
                 ),
-              ),
-              Text(
-                price,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: primaryColor,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        serviceName,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: onSurfaceColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Barber: $barberName',
+                        style: TextStyle(fontSize: 12, color: textTertiary),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        date,
+                        style: TextStyle(fontSize: 12, color: textTertiary),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Text(
+                  price,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: onSurfaceColor,
+                  ),
+                ),
+              ],
+            ),
           ),
           
-          // Tombol Batal
-          if (rawStatus == 'pending' || rawStatus == 'confirmed') ...[
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => _showCancelDialog(id),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: dangerColor,
-                  side: BorderSide(color: dangerColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+          // 3. Order Tracking Row
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: isDark ? const Color(0xFF1F2937).withValues(alpha: 0.5) : const Color(0xFFF9FAFB),
+            child: Row(
+              children: [
+                Icon(
+                  _getProgressIcon(rawStatus), 
+                  size: 20, 
+                  color: _getProgressColor(rawStatus),
                 ),
-                child: const Text('Batalkan Reservasi'),
-              ),
-            ),
-          ] else if (rawStatus == 'cancel_requested') ...[
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Menunggu persetujuan admin untuk pembatalan.',
-                      style: TextStyle(color: Colors.orange, fontSize: 12),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _getProgressText(rawStatus),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _getProgressColor(rawStatus),
                     ),
                   ),
-                ],
+                ),
+                Icon(Icons.chevron_right, size: 16, color: textTertiary),
+              ],
+            ),
+          ),
+          
+          // 4. Total Harga
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '1 Layanan',
+                  style: TextStyle(fontSize: 12, color: textTertiary),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      'Total Pesanan: ',
+                      style: TextStyle(fontSize: 13, color: onSurfaceColor),
+                    ),
+                    Text(
+                      price,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: outlineColor),
+          
+          // 5. Action Buttons
+          if (_hasActionButtons(rawStatus))
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: _buildActionButtons(id, rawStatus),
               ),
             ),
-          ]
         ],
       ),
-    );
+    ).animate().fade(duration: 500.ms).slideX(begin: 0.1, end: 0);
+  }
+
+  IconData _getProgressIcon(String rawStatus) {
+    switch (rawStatus) {
+      case 'pending':
+        return Icons.access_time;
+      case 'confirmed':
+        return Icons.thumb_up_alt_outlined;
+      case 'in_progress':
+        return Icons.cut_outlined;
+      case 'completed':
+        return Icons.check_circle_outline;
+      case 'cancel_requested':
+        return Icons.pending_actions;
+      case 'canceled':
+      case 'cancelled':
+      case 'rejected':
+        return Icons.cancel_outlined;
+      default:
+        return Icons.info_outline;
+    }
+  }
+
+  String _getProgressText(String rawStatus) {
+    switch (rawStatus) {
+      case 'pending':
+        return 'Pesanan telah dibuat dan menunggu pembayaran/konfirmasi.';
+      case 'confirmed':
+        return 'Pesanan telah dikonfirmasi oleh Admin. Silakan datang ke lokasi.';
+      case 'in_progress':
+        return 'Layanan sedang berlangsung.';
+      case 'completed':
+        return 'Pesanan telah selesai. Terima kasih!';
+      case 'cancel_requested':
+        return 'Permintaan pembatalan sedang ditinjau.';
+      case 'canceled':
+      case 'cancelled':
+        return 'Pesanan telah dibatalkan.';
+      case 'rejected':
+        return 'Pesanan ditolak oleh sistem/admin.';
+      default:
+        return 'Memproses pesanan...';
+    }
+  }
+
+  Color _getProgressColor(String rawStatus) {
+    if (rawStatus == 'completed') return Colors.green;
+    if (rawStatus == 'canceled' || rawStatus == 'cancelled' || rawStatus == 'rejected') return dangerColor;
+    if (rawStatus == 'cancel_requested') return Colors.orange;
+    return Colors.blue; 
+  }
+
+  bool _hasActionButtons(String rawStatus) {
+    return rawStatus == 'pending' || rawStatus == 'confirmed' || rawStatus == 'cancel_requested';
+  }
+
+  List<Widget> _buildActionButtons(String id, String rawStatus) {
+    if (rawStatus == 'pending' || rawStatus == 'confirmed') {
+      return [
+        OutlinedButton(
+          onPressed: () => _showCancelDialog(id),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: onSurfaceColor,
+            side: BorderSide(color: outlineColor),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          child: const Text('Batalkan Pesanan'),
+        ),
+      ];
+    } else if (rawStatus == 'cancel_requested') {
+      return [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.orange, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Menunggu persetujuan pembatalan',
+                    style: TextStyle(color: Colors.orange, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ];
+    }
+    return [];
   }
 
   void _showCancelDialog(String reservationId) {

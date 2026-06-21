@@ -4,12 +4,22 @@ import 'features/dashboard/presentation/pages/main_screen.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/dashboard/presentation/pages/barber_dashboard_page.dart';
 import 'features/dashboard/presentation/pages/admin_dashboard_page.dart';
+import 'core/services/notification_service.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 final ValueNotifier<int> profileUpdateNotifier = ValueNotifier(0);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Notice: Since Firebase initialization requires google-services.json to be present,
+  // we need to catch the exception in case the user hasn't added it yet.
+  try {
+    await NotificationService.initialize();
+  } catch (e) {
+    debugPrint("Firebase not initialized. Make sure google-services.json is added: $e");
+  }
+
   runApp(const MyBarbershopApp());
 }
 
@@ -65,6 +75,11 @@ class _MyBarbershopAppState extends State<MyBarbershopApp> {
                 final prefs = snapshot.data!;
                 final userId = prefs.getString('user_id');
                 if (userId != null && userId.isNotEmpty) {
+                  // Attempt to upload token
+                  try {
+                    NotificationService.uploadFcmToken();
+                  } catch (_) {}
+
                   // Ambil role dari memori, kalau kosong anggap saja customer
                   final userRole = prefs.getString('user_role') ?? 'customer';
 
